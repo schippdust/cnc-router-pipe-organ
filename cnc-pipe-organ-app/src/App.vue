@@ -55,6 +55,34 @@
               />
             </v-col>
 
+            <v-col cols="12" md="6">
+              <label class="text-caption text-medium-emphasis">
+                Wind pressure at the pipe foot: {{ windPressureInWc.toFixed(1) }} in. w.c.
+                ({{ (windPressureInWc * MBAR_PER_IN_WC).toFixed(0) }} mbar)
+              </label>
+              <div class="d-flex align-center ga-2">
+                <v-text-field
+                  density="compact"
+                  hide-details
+                  :model-value="windPressureInWc"
+                  style="max-width: 116px;"
+                  suffix="w.c."
+                  type="number"
+                  variant="outlined"
+                  @update:model-value="windPressureInWc = Number($event)"
+                />
+                <v-slider
+                  color="primary"
+                  hide-details
+                  :max="WIND_PRESSURE_MAX"
+                  :min="0.5"
+                  :model-value="windPressureInWc"
+                  :step="0.5"
+                  @update:model-value="windPressureInWc = $event"
+                />
+              </div>
+            </v-col>
+
             <v-col cols="6" md="3">
               <v-text-field
                 density="comfortable"
@@ -72,6 +100,14 @@
               <div class="text-caption text-medium-emphasis">Speed of sound</div>
               <div class="text-h6">{{ speed.toFixed(1) }} m/s</div>
             </v-col>
+
+            <v-col cols="12" md="6">
+              <div class="text-caption text-medium-emphasis">
+                <v-icon icon="mdi-information-outline" size="x-small" />
+                Pressure sets jet velocity (and whether pipes speak); airflow is the
+                fan's total output — most of it gets bled off, not pushed through a pipe.
+              </div>
+            </v-col>
           </v-row>
         </v-card>
 
@@ -84,6 +120,7 @@
               :initial-length-ft="6"
               label="Pipe A"
               pipe-id="A"
+              :pressure-in-wc="windPressureInWc"
               :temp-f="tempF"
               @update:frequency="pipeAFreq = $event"
             />
@@ -96,6 +133,7 @@
               label="Pipe B"
               :partner-frequency="pipeAFreq"
               pipe-id="B"
+              :pressure-in-wc="windPressureInWc"
               show-harmonize
               :temp-f="tempF"
             />
@@ -120,8 +158,13 @@
 
   const audio = useOrganAudio()
 
+  // Wind-pressure slider tops out at the fan's max static pressure (in. w.c.).
+  const WIND_PRESSURE_MAX = 180
+  const MBAR_PER_IN_WC = 2.491
+
   const tempF = ref(68)
-  const airflowCfm = ref(1200)
+  const airflowCfm = ref(282)
+  const windPressureInWc = ref(180)
   const pipeAFreq = ref(0)
 
   const tempC = computed(() => fahrenheitToCelsius(tempF.value))

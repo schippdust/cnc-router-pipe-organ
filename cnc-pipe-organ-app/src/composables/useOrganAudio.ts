@@ -20,6 +20,7 @@ interface Oscillator {
   stop: () => void
   freq: (hz: number, rampSeconds?: number) => void
   amp: (level: number, rampSeconds?: number) => void
+  setType: (type: string) => void
 }
 interface OscillatorCtor {
   new (freq: number, type?: string): Oscillator
@@ -72,10 +73,10 @@ async function ensureInitialized (): Promise<void> {
   await initPromise
 }
 
-function getOrCreate (pipeId: string, freq: number): Oscillator {
+function getOrCreate (pipeId: string, freq: number, type = 'sine'): Oscillator {
   let osc = oscillators.get(pipeId)
   if (!osc && OscillatorClass) {
-    osc = new OscillatorClass(freq, 'sine')
+    osc = new OscillatorClass(freq, type)
     osc.amp(0)
     oscillators.set(pipeId, osc)
   }
@@ -84,14 +85,25 @@ function getOrCreate (pipeId: string, freq: number): Oscillator {
 
 export function useOrganAudio () {
   /** Start (or unmute) a pipe's drone. Must be called from a user gesture. */
-  async function start (pipeId: string, freq: number, amp: number): Promise<void> {
+  async function start (
+    pipeId: string,
+    freq: number,
+    amp: number,
+    type = 'sine',
+  ): Promise<void> {
     await ensureInitialized()
     sketch?.userStartAudio()
-    const osc = getOrCreate(pipeId, freq)
+    const osc = getOrCreate(pipeId, freq, type)
+    osc.setType(type)
     osc.freq(freq, FREQ_RAMP_SECONDS)
     osc.start()
     osc.amp(amp, AMP_RAMP_SECONDS)
     playing[pipeId] = true
+  }
+
+  /** Change a pipe's waveform/timbre (e.g. as cut-up brightness changes). */
+  function setType (pipeId: string, type: string): void {
+    oscillators.get(pipeId)?.setType(type)
   }
 
   /** Ramp a pipe down to silence and stop its oscillator. */
@@ -136,5 +148,5 @@ export function useOrganAudio () {
     return !!playing[pipeId]
   }
 
-  return { start, stop, setFrequency, setAmp, stopAll, dispose, isPlaying, playing }
+  return { start, stop, setFrequency, setAmp, setType, stopAll, dispose, isPlaying, playing }
 }

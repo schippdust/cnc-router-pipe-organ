@@ -107,6 +107,16 @@
         </div>
       </div>
     </div>
+
+    <div class="mt-3">
+      <VoicingPanel
+        :diameter-in="diameterIn"
+        :freq="frequency"
+        :pressure-in-wc="pressureInWc"
+        :temp-f="tempF"
+        @update:timbre="onTimbre"
+      />
+    </div>
   </v-card>
 </template>
 
@@ -126,6 +136,7 @@
     PIPE_LENGTH_FT,
   } from '@/composables/acoustics'
   import { useOrganAudio } from '@/composables/useOrganAudio'
+  import VoicingPanel from '@/components/VoicingPanel.vue'
 
   const props = withDefaults(defineProps<{
     pipeId: string
@@ -138,12 +149,15 @@
     showHarmonize?: boolean
     /** The partner pipe's live frequency to harmonize against. */
     partnerFrequency?: number
+    /** Shared wind/foot pressure (inches of water column) for voicing. */
+    pressureInWc?: number
   }>(), {
     color: 'primary',
     initialLengthFt: 7,
     initialDiameterIn: 6,
     showHarmonize: false,
     partnerFrequency: 0,
+    pressureInWc: 3,
   })
 
   const emit = defineEmits<{ 'update:frequency': [number] }>()
@@ -154,6 +168,8 @@
   const diameterIn = ref(props.initialDiameterIn)
   const volume = ref(0.4)
   const autoHarmonize = ref(false)
+  // Waveform reported by the voicing panel (timbre follows the cut-up).
+  const oscType = ref('sine')
 
   // End correction in inches (how much "longer" the pipe acts), display only.
   const endCorrectionIn = computed(
@@ -224,6 +240,11 @@
     audio.setAmp(props.pipeId, value)
   }
 
+  function onTimbre (type: string) {
+    oscType.value = type
+    audio.setType(props.pipeId, type)
+  }
+
   function onSelectNote (midi: number | null) {
     if (midi == null) return
     const target = midiToFrequency(midi)
@@ -235,7 +256,7 @@
     if (playing.value) {
       audio.stop(props.pipeId)
     } else {
-      audio.start(props.pipeId, frequency.value, volume.value)
+      audio.start(props.pipeId, frequency.value, volume.value, oscType.value)
     }
   }
 
