@@ -1,1 +1,5 @@
 cnc-pipe-organ-app/node_modules
+*.code-workspace
+*.3dm
+*.3dmbak
+*.stl
